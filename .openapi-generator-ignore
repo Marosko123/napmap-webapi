@@ -1,0 +1,8 @@
+cmd/**
+internal/db_service/**
+internal/napmap/impl_*
+internal/napmap/utils_*
+internal/napmap/ext_*
+go.mod
+go.sum
+Dockerfile
