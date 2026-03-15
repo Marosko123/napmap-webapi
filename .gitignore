@@ -1,0 +1,18 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+napmap-webapi-srv
+
+# Test
+*.test
+*.out
+
+# Dependency
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp

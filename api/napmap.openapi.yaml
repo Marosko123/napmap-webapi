@@ -1,0 +1,433 @@
+openapi: 3.0.0
+servers:
+  - description: Cluster Endpoint
+    url: /api
+info:
+  description: NAPMap - Alternative fuel stations registry API
+  version: "1.0.0"
+  title: NAPMap Stations API
+  contact:
+    email: maros.bednar@stuba.sk
+  license:
+    name: CC BY 4.0
+    url: "https://creativecommons.org/licenses/by/4.0/"
+tags:
+  - name: stations
+    description: Fuel stations management API
+paths:
+  "/stations":
+    get:
+      tags:
+        - stations
+      summary: Get list of stations
+      operationId: getStations
+      description: Returns list of fuel stations with optional filtering
+      parameters:
+        - in: query
+          name: city
+          description: Filter by city name
+          schema:
+            type: string
+        - in: query
+          name: fuel
+          description: Filter by fuel type
+          schema:
+            type: string
+            enum: [ELECTRIC, HYDROGEN, CNG, LNG, LPG]
+        - in: query
+          name: stationType
+          description: Filter by station type
+          schema:
+            type: string
+            enum: [CHARGING, REFUELING]
+        - in: query
+          name: operator
+          description: Filter by operator name
+          schema:
+            type: string
+        - in: query
+          name: status
+          description: Filter by status (default ACTIVE)
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+            default: ACTIVE
+        - in: query
+          name: minPowerKw
+          description: Minimum power in kW
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of stations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Station"
+              examples:
+                response:
+                  $ref: "#/components/examples/StationsListExample"
+    post:
+      tags:
+        - stations
+      summary: Create new station
+      operationId: createStation
+      description: Register a new fuel station
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Station"
+            examples:
+              request:
+                $ref: "#/components/examples/StationExample"
+        description: Station to create
+        required: true
+      responses:
+        "201":
+          description: Station created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+        "400":
+          description: Invalid input
+        "409":
+          description: Station already exists
+  "/stations/{stationId}":
+    get:
+      tags:
+        - stations
+      summary: Get station details
+      operationId: getStation
+      description: Returns details of a specific station
+      parameters:
+        - in: path
+          name: stationId
+          description: Station ID
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Station details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+              examples:
+                response:
+                  $ref: "#/components/examples/StationExample"
+        "404":
+          description: Station not found
+    put:
+      tags:
+        - stations
+      summary: Update station
+      operationId: updateStation
+      description: Update an existing station
+      parameters:
+        - in: path
+          name: stationId
+          description: Station ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Station"
+        description: Updated station data
+        required: true
+      responses:
+        "200":
+          description: Station updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+        "400":
+          description: Invalid input
+        "404":
+          description: Station not found
+    delete:
+      tags:
+        - stations
+      summary: Delete station
+      operationId: deleteStation
+      description: Soft delete - sets status to INACTIVE
+      parameters:
+        - in: path
+          name: stationId
+          description: Station ID
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Station deleted
+        "404":
+          description: Station not found
+components:
+  schemas:
+    Station:
+      type: object
+      required:
+        - id
+        - name
+        - stationType
+        - fuels
+        - operatorName
+        - address
+        - city
+        - lat
+        - lng
+      properties:
+        id:
+          type: string
+          example: "st-001"
+          description: Unique station identifier
+        name:
+          type: string
+          example: "NAPMap Bratislava Nivy"
+          description: Station name
+        stationType:
+          type: string
+          enum: [CHARGING, REFUELING]
+          example: "CHARGING"
+          description: Type of station
+        fuels:
+          type: array
+          items:
+            type: string
+            enum: [ELECTRIC, HYDROGEN, CNG, LNG, LPG]
+          example: ["ELECTRIC"]
+          description: Supported fuel types
+        operatorName:
+          type: string
+          example: "NAPMap Energy s.r.o."
+          description: Operator company name
+        address:
+          type: string
+          example: "Mlynské nivy 16"
+          description: Street address
+        city:
+          type: string
+          example: "Bratislava"
+          description: City name
+        country:
+          type: string
+          example: "SK"
+          default: "SK"
+          description: Country code
+        lat:
+          type: number
+          format: double
+          example: 48.1486
+          description: GPS latitude
+        lng:
+          type: number
+          format: double
+          example: 17.1077
+          description: GPS longitude
+        openingHours:
+          type: string
+          example: "24/7"
+          description: Operating hours
+        maxPowerKw:
+          type: integer
+          example: 150
+          description: Maximum charging power in kW
+        connectors:
+          type: array
+          items:
+            type: string
+          example: ["CCS2", "Type2", "CHAdeMO"]
+          description: Available connector types
+        services:
+          type: array
+          items:
+            type: string
+          example: ["WC", "Food", "Parking"]
+          description: Additional services
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          default: "ACTIVE"
+          example: "ACTIVE"
+          description: Station status
+  examples:
+    StationExample:
+      summary: Example station
+      value:
+        id: "st-001"
+        name: "NAPMap Bratislava Nivy"
+        stationType: "CHARGING"
+        fuels: ["ELECTRIC"]
+        operatorName: "NAPMap Energy s.r.o."
+        address: "Mlynské nivy 16"
+        city: "Bratislava"
+        country: "SK"
+        lat: 48.1486
+        lng: 17.1077
+        openingHours: "24/7"
+        maxPowerKw: 150
+        connectors: ["CCS2", "Type2", "CHAdeMO"]
+        services: ["WC", "Parking"]
+        status: "ACTIVE"
+    StationsListExample:
+      summary: List of stations
+      value:
+        - id: "st-001"
+          name: "NAPMap Bratislava Nivy"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Mlynské nivy 16"
+          city: "Bratislava"
+          country: "SK"
+          lat: 48.1486
+          lng: 17.1077
+          openingHours: "24/7"
+          maxPowerKw: 150
+          connectors: ["CCS2", "Type2"]
+          services: ["WC", "Parking"]
+          status: "ACTIVE"
+        - id: "st-002"
+          name: "NAPMap Petržalka"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Einsteinova 25"
+          city: "Bratislava"
+          country: "SK"
+          lat: 48.1322
+          lng: 17.1067
+          openingHours: "06:00-22:00"
+          maxPowerKw: 50
+          connectors: ["Type2"]
+          services: ["Parking"]
+          status: "ACTIVE"
+        - id: "st-003"
+          name: "NAPMap Trnava Centrum"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Hlavná 5"
+          city: "Trnava"
+          country: "SK"
+          lat: 48.3774
+          lng: 17.5885
+          openingHours: "24/7"
+          maxPowerKw: 100
+          connectors: ["CCS2", "Type2"]
+          services: ["WC", "Food"]
+          status: "ACTIVE"
+        - id: "st-004"
+          name: "NAPMap Nitra Zobor"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Štefánikova 8"
+          city: "Nitra"
+          country: "SK"
+          lat: 48.3069
+          lng: 18.0869
+          openingHours: "06:00-20:00"
+          maxPowerKw: 75
+          connectors: ["CCS2", "Type2"]
+          services: ["Parking"]
+          status: "ACTIVE"
+        - id: "st-005"
+          name: "NAPMap Žilina Station"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Vysokoškolákov 52"
+          city: "Žilina"
+          country: "SK"
+          lat: 49.2194
+          lng: 18.7408
+          openingHours: "24/7"
+          maxPowerKw: 150
+          connectors: ["CCS2", "Type2", "CHAdeMO"]
+          services: ["WC", "Food", "Parking"]
+          status: "ACTIVE"
+        - id: "st-006"
+          name: "NAPMap Banská Bystrica"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Námestie SNP 12"
+          city: "Banská Bystrica"
+          country: "SK"
+          lat: 48.7395
+          lng: 19.1533
+          openingHours: "24/7"
+          maxPowerKw: 100
+          connectors: ["CCS2", "Type2"]
+          services: ["WC"]
+          status: "ACTIVE"
+        - id: "st-007"
+          name: "NAPMap Prešov Hub"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Masarykova 20"
+          city: "Prešov"
+          country: "SK"
+          lat: 49.0018
+          lng: 21.2395
+          openingHours: "06:00-22:00"
+          maxPowerKw: 75
+          connectors: ["CCS2", "Type2"]
+          services: ["Parking"]
+          status: "ACTIVE"
+        - id: "st-008"
+          name: "NAPMap Košice Terminal"
+          stationType: "CHARGING"
+          fuels: ["ELECTRIC"]
+          operatorName: "NAPMap Energy s.r.o."
+          address: "Staničné námestie 1"
+          city: "Košice"
+          country: "SK"
+          lat: 48.7164
+          lng: 21.2611
+          openingHours: "24/7"
+          maxPowerKw: 150
+          connectors: ["CCS2", "Type2", "CHAdeMO"]
+          services: ["WC", "Food", "Parking"]
+          status: "ACTIVE"
+        - id: "st-009"
+          name: "NAPMap Senec H2 Point"
+          stationType: "REFUELING"
+          fuels: ["HYDROGEN"]
+          operatorName: "H2 Slovakia a.s."
+          address: "Diaľničná cesta 12"
+          city: "Senec"
+          country: "SK"
+          lat: 48.2194
+          lng: 17.3997
+          openingHours: "06:00-22:00"
+          maxPowerKw: null
+          connectors: []
+          services: ["WC", "Food", "Parking"]
+          status: "ACTIVE"
+        - id: "st-010"
+          name: "NAPMap Zvolen CNG"
+          stationType: "REFUELING"
+          fuels: ["CNG"]
+          operatorName: "CNG Slovensko s.r.o."
+          address: "Bystrický rad 2"
+          city: "Zvolen"
+          country: "SK"
+          lat: 48.5747
+          lng: 19.1369
+          openingHours: "24/7"
+          maxPowerKw: null
+          connectors: []
+          services: ["WC", "Parking"]
+          status: "ACTIVE"
