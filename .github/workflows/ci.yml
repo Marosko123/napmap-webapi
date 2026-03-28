@@ -32,6 +32,9 @@ jobs:
         input: api/napmap.openapi.yaml
         additional-properties: apiPath=internal/napmap,packageName=napmap,interfaceOnly=true
 
+    - name: Clean generated root files
+      run: rm -f main.go
+
     - name: Build
       run: go build -v ./cmd/napmap-api-service
 
