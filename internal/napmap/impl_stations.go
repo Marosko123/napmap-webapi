@@ -83,11 +83,52 @@ func (o *implStationsAPI) CreateStation(c *gin.Context) {
 		return
 	}
 
-	if station.Name == "" || station.StationType == "" || len(station.Fuels) == 0 ||
-		station.OperatorName == "" || station.Address == "" || station.City == "" {
+	missing := []string{}
+	if station.Name == "" {
+		missing = append(missing, "name")
+	}
+	if station.StationType == "" {
+		missing = append(missing, "stationType")
+	}
+	if len(station.Fuels) == 0 {
+		missing = append(missing, "fuels")
+	}
+	if station.OperatorName == "" {
+		missing = append(missing, "operatorName")
+	}
+	if station.Address == "" {
+		missing = append(missing, "address")
+	}
+	if station.City == "" {
+		missing = append(missing, "city")
+	}
+	if len(missing) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": "Missing required fields",
+			"fields":  missing,
+		})
+		return
+	}
+
+	if station.Lat < -90 || station.Lat > 90 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid GPS latitude (must be in range -90..90)",
+		})
+		return
+	}
+	if station.Lng < -180 || station.Lng > 180 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid GPS longitude (must be in range -180..180)",
+		})
+		return
+	}
+	if station.MaxPowerKw != nil && *station.MaxPowerKw < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "maxPowerKw must be non-negative",
 		})
 		return
 	}

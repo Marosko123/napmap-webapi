@@ -217,6 +217,24 @@ func TestUpdateStation_replacesDocumentAndPreservesId(t *testing.T) {
 	}
 }
 
+func TestCreateStation_rejectsInvalidGPS(t *testing.T) {
+	cases := []struct{ name, body string }{
+		{"lat too low", `{"name":"X","stationType":"CHARGING","fuels":["ELECTRIC"],"operatorName":"Y","address":"A","city":"B","lat":-91,"lng":0}`},
+		{"lat too high", `{"name":"X","stationType":"CHARGING","fuels":["ELECTRIC"],"operatorName":"Y","address":"A","city":"B","lat":91,"lng":0}`},
+		{"lng too low", `{"name":"X","stationType":"CHARGING","fuels":["ELECTRIC"],"operatorName":"Y","address":"A","city":"B","lat":0,"lng":-181}`},
+		{"lng too high", `{"name":"X","stationType":"CHARGING","fuels":["ELECTRIC"],"operatorName":"Y","address":"A","city":"B","lat":0,"lng":181}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, w := setupTestContext(http.MethodPost, "/stations", tc.body, nil, newMockDbService())
+			NewStationsApi().CreateStation(c)
+			if w.Code != http.StatusBadRequest {
+				t.Errorf("%s: expected 400, got %d body=%s", tc.name, w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
 func TestGetStations_returnsListFromDb(t *testing.T) {
 	mock := newMockDbService()
 	mock.store["a"] = &Station{Id: "a", Name: "A"}
