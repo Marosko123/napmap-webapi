@@ -1,0 +1,5 @@
+internal/napmap/api_*
+internal/napmap/model_*
+internal/napmap/routers.go
+build/
+deployments/
