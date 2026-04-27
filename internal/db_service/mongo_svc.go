@@ -21,6 +21,7 @@ type DbService[DocType interface{}] interface {
 	FindDocuments(ctx context.Context, filter interface{}) ([]*DocType, error)
 	UpdateDocument(ctx context.Context, id string, document *DocType) error
 	DeleteDocument(ctx context.Context, id string) error
+	Ping(ctx context.Context) error
 	Disconnect(ctx context.Context) error
 }
 
@@ -138,6 +139,16 @@ func (m *mongoSvc[DocType]) connect(ctx context.Context) (*mongo.Client, error) 
 		m.client.Store(client)
 		return client, nil
 	}
+}
+
+func (m *mongoSvc[DocType]) Ping(ctx context.Context) error {
+	ctx, contextCancel := context.WithTimeout(ctx, m.Timeout)
+	defer contextCancel()
+	client, err := m.connect(ctx)
+	if err != nil {
+		return err
+	}
+	return client.Ping(ctx, nil)
 }
 
 func (m *mongoSvc[DocType]) Disconnect(ctx context.Context) error {
