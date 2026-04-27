@@ -125,13 +125,6 @@ func (o *implStationsAPI) CreateStation(c *gin.Context) {
 		})
 		return
 	}
-	if station.MaxPowerKw != nil && *station.MaxPowerKw < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "maxPowerKw must be non-negative",
-		})
-		return
-	}
 
 	if station.Id == "" || station.Id == "@new" {
 		station.Id = uuid.NewString()
