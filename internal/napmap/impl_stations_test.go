@@ -15,10 +15,10 @@ import (
 	"github.com/Marosko123/napmap-webapi/internal/db_service"
 )
 
-// mockDbService is a thread-safe in-memory implementation of DbService[Station] for tests.
+// in-memory mock for tests
 type mockDbService struct {
-	mu    sync.Mutex
-	store map[string]*Station
+	mu      sync.Mutex
+	store   map[string]*Station
 	pingErr error
 }
 
@@ -103,14 +103,14 @@ func setupTestContext(method, path, body string, params gin.Params, db db_servic
 
 func validStationJSON() string {
 	return `{
-		"name": "NAPMap Test",
+		"name": "ZSE Test Eurovea",
 		"stationType": "CHARGING",
 		"fuels": ["ELECTRIC"],
-		"operatorName": "NAPMap Energy s.r.o.",
-		"address": "Mlynské nivy 1",
+		"operatorName": "ZSE Drive",
+		"address": "Pribinova 8",
 		"city": "Bratislava",
-		"lat": 48.1486,
-		"lng": 17.1077,
+		"lat": 48.1417,
+		"lng": 17.1216,
 		"maxPowerKw": 50
 	}`
 }
@@ -164,7 +164,7 @@ func TestCreateStation_rejectsMissingRequiredFields(t *testing.T) {
 func TestCreateStation_returns409OnDuplicate(t *testing.T) {
 	mock := newMockDbService()
 	mock.store["st-001"] = &Station{Id: "st-001", Name: "Existing"}
-	body := strings.Replace(validStationJSON(), `"name": "NAPMap Test"`, `"id":"st-001","name":"NAPMap Test"`, 1)
+	body := strings.Replace(validStationJSON(), `"name": "ZSE Test Eurovea"`, `"id":"st-001","name":"ZSE Test Eurovea"`, 1)
 
 	c, w := setupTestContext(http.MethodPost, "/stations", body, nil, mock)
 	NewStationsApi().CreateStation(c)
