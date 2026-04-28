@@ -55,11 +55,7 @@ func (o *implStationsAPI) GetStations(c *gin.Context) {
 
 	stations, err := db.FindDocuments(c.Request.Context(), filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to load stations",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -75,15 +71,11 @@ func (o *implStationsAPI) CreateStation(c *gin.Context) {
 	var station Station
 
 	if err := c.ShouldBindJSON(&station); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid request body",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	missing := []string{}
+	var missing []string
 	if station.Name == "" {
 		missing = append(missing, "name")
 	}
@@ -103,26 +95,15 @@ func (o *implStationsAPI) CreateStation(c *gin.Context) {
 		missing = append(missing, "city")
 	}
 	if len(missing) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Missing required fields",
-			"fields":  missing,
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":  "missing required fields",
+			"fields": missing,
 		})
 		return
 	}
 
-	if station.Lat < -90 || station.Lat > 90 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid GPS latitude (must be in range -90..90)",
-		})
-		return
-	}
-	if station.Lng < -180 || station.Lng > 180 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid GPS longitude (must be in range -180..180)",
-		})
+	if station.Lat < -90 || station.Lat > 90 || station.Lng < -180 || station.Lng > 180 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid GPS coordinates"})
 		return
 	}
 
@@ -144,16 +125,9 @@ func (o *implStationsAPI) CreateStation(c *gin.Context) {
 	case nil:
 		c.JSON(http.StatusCreated, station)
 	case db_service.ErrConflict:
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  http.StatusConflict,
-			"message": "Station already exists",
-		})
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "station already exists"})
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to create station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
@@ -165,10 +139,7 @@ func (o *implStationsAPI) GetStation(c *gin.Context) {
 
 	stationId := c.Param("stationId")
 	if stationId == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Station ID is required",
-		})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "stationId is required"})
 		return
 	}
 
@@ -178,16 +149,9 @@ func (o *implStationsAPI) GetStation(c *gin.Context) {
 	case nil:
 		c.JSON(http.StatusOK, station)
 	case db_service.ErrNotFound:
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Station not found",
-		})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "station not found"})
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to load station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
@@ -199,40 +163,26 @@ func (o *implStationsAPI) UpdateStation(c *gin.Context) {
 
 	stationId := c.Param("stationId")
 	if stationId == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Station ID is required",
-		})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "stationId is required"})
 		return
 	}
 
-	// check if station exists
+	// over že stanica existuje pred update-om
 	_, err := db.FindDocument(c.Request.Context(), stationId)
 	switch err {
 	case nil:
 		// ok
 	case db_service.ErrNotFound:
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Station not found",
-		})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "station not found"})
 		return
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to load station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	var station Station
 	if err := c.ShouldBindJSON(&station); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid request body",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -243,11 +193,7 @@ func (o *implStationsAPI) UpdateStation(c *gin.Context) {
 	case nil:
 		c.JSON(http.StatusOK, station)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to update station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
@@ -259,30 +205,20 @@ func (o *implStationsAPI) DeleteStation(c *gin.Context) {
 
 	stationId := c.Param("stationId")
 	if stationId == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Station ID is required",
-		})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "stationId is required"})
 		return
 	}
 
-	// soft delete - set status to INACTIVE
+	// soft delete - status na INACTIVE
 	station, err := db.FindDocument(c.Request.Context(), stationId)
 	switch err {
 	case nil:
 		// ok
 	case db_service.ErrNotFound:
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Station not found",
-		})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "station not found"})
 		return
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to load station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -293,32 +229,20 @@ func (o *implStationsAPI) DeleteStation(c *gin.Context) {
 	case nil:
 		c.AbortWithStatus(http.StatusNoContent)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to delete station",
-			"error":   err.Error(),
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
 func getDbService(c *gin.Context) (db_service.DbService[Station], bool) {
 	value, exists := c.Get("db_service")
 	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "db_service not found",
-			"error":   "db_service not found",
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "db_service not found in context"})
 		return nil, false
 	}
 
 	db, ok := value.(db_service.DbService[Station])
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "db_service context is not of type db_service.DbService",
-			"error":   "cannot cast db_service context to db_service.DbService",
-		})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "db_service has unexpected type"})
 		return nil, false
 	}
 
