@@ -9,7 +9,7 @@ const collection = process.env.NAPMAP_API_MONGODB_COLLECTION
 
 const retrySeconds = parseInt(process.env.RETRY_CONNECTION_SECONDS || "5") || 5;
 
-// try to connect to mongoDB until it is not available
+// retry mongo connection
 let connection;
 while(true) {
     try {
@@ -22,39 +22,27 @@ while(true) {
     }
 }
 
-// if database and collection exists, exit with success - already initialized
-const databases = connection.getDBNames()
-if (databases.includes(database)) {
-    const dbInstance = connection.getDB(database)
-    const collections = dbInstance.getCollectionNames()
-    if (collections.includes(collection)) {
-        print(`Collection '${collection}' already exists in database '${database}'`)
-        process.exit(0);
-    }
+const db = connection.getDB(database)
+if (!db.getCollectionNames().includes(collection)) {
+    db.createCollection(collection)
 }
 
-// initialize
-const db = connection.getDB(database)
-db.createCollection(collection)
-
-// create indexes
-db[collection].createIndex({ "id": 1 })
+db[collection].createIndex({ "id": 1 }, { unique: true })
 db[collection].createIndex({ "city": 1 })
 db[collection].createIndex({ "status": 1 })
 
-// insert sample data
-let result = db[collection].insertMany([
+const seed = [
     {
         "id": "st-001",
-        "name": "NAPMap Bratislava Nivy",
+        "name": "ZSE Drive Eurovea",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
-        "address": "Mlynské nivy 16",
+        "operatorName": "ZSE Drive",
+        "address": "Pribinova 8",
         "city": "Bratislava",
         "country": "SK",
-        "lat": 48.1486,
-        "lng": 17.1077,
+        "lat": 48.1417,
+        "lng": 17.1216,
         "openingHours": "24/7",
         "maxPowerKw": 150,
         "connectors": ["CCS2", "Type2", "CHAdeMO"],
@@ -63,10 +51,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-002",
-        "name": "NAPMap Petržalka",
+        "name": "Greenway Petržalka",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "Greenway",
         "address": "Einsteinova 25",
         "city": "Bratislava",
         "country": "SK",
@@ -80,10 +68,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-003",
-        "name": "NAPMap Trnava Centrum",
+        "name": "ZSE Drive Trnava Hlavná",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "ZSE Drive",
         "address": "Hlavná 5",
         "city": "Trnava",
         "country": "SK",
@@ -97,10 +85,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-004",
-        "name": "NAPMap Nitra Zobor",
+        "name": "Eon Drive Nitra",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "Eon Drive Slovensko",
         "address": "Štefánikova 8",
         "city": "Nitra",
         "country": "SK",
@@ -114,10 +102,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-005",
-        "name": "NAPMap Žilina Station",
+        "name": "Tesla Supercharger Žilina",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "Tesla",
         "address": "Vysokoškolákov 52",
         "city": "Žilina",
         "country": "SK",
@@ -125,16 +113,16 @@ let result = db[collection].insertMany([
         "lng": 18.7408,
         "openingHours": "24/7",
         "maxPowerKw": 150,
-        "connectors": ["CCS2", "Type2", "CHAdeMO"],
+        "connectors": ["CCS2", "Tesla"],
         "services": ["WC", "Food", "Parking"],
         "status": "ACTIVE"
     },
     {
         "id": "st-006",
-        "name": "NAPMap Banská Bystrica",
+        "name": "Greenway Banská Bystrica",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "Greenway",
         "address": "Námestie SNP 12",
         "city": "Banská Bystrica",
         "country": "SK",
@@ -148,10 +136,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-007",
-        "name": "NAPMap Prešov Hub",
+        "name": "ZSE Drive Prešov",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
+        "operatorName": "ZSE Drive",
         "address": "Masarykova 20",
         "city": "Prešov",
         "country": "SK",
@@ -165,11 +153,11 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-008",
-        "name": "NAPMap Košice Terminal",
+        "name": "ZSE Drive Košice Aupark",
         "stationType": "CHARGING",
         "fuels": ["ELECTRIC"],
-        "operatorName": "NAPMap Energy s.r.o.",
-        "address": "Staničné námestie 1",
+        "operatorName": "ZSE Drive",
+        "address": "Námestie osloboditeľov 1",
         "city": "Košice",
         "country": "SK",
         "lat": 48.7164,
@@ -182,10 +170,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-009",
-        "name": "NAPMap Senec H2 Point",
+        "name": "Slovnaft H2 Senec",
         "stationType": "REFUELING",
         "fuels": ["HYDROGEN"],
-        "operatorName": "H2 Slovakia a.s.",
+        "operatorName": "Slovnaft",
         "address": "Diaľničná cesta 12",
         "city": "Senec",
         "country": "SK",
@@ -199,10 +187,10 @@ let result = db[collection].insertMany([
     },
     {
         "id": "st-010",
-        "name": "NAPMap Zvolen CNG",
+        "name": "SPP CNG Zvolen",
         "stationType": "REFUELING",
         "fuels": ["CNG"],
-        "operatorName": "CNG Slovensko s.r.o.",
+        "operatorName": "SPP CNG",
         "address": "Bystrický rad 2",
         "city": "Zvolen",
         "country": "SK",
@@ -214,12 +202,17 @@ let result = db[collection].insertMany([
         "services": ["WC", "Parking"],
         "status": "ACTIVE"
     }
-]);
+]
 
-if (result.writeError) {
-    console.error(result)
-    print(`Error when writing the data: ${result.errmsg}`)
+let inserted = 0
+for (const station of seed) {
+    const res = db[collection].updateOne(
+        { id: station.id },
+        { $setOnInsert: station },
+        { upsert: true }
+    )
+    if (res.upsertedCount > 0) inserted += 1
 }
+print(`Seed completed: ${inserted}/${seed.length} new stations inserted`)
 
-// exit with success
 process.exit(0);
